@@ -1,0 +1,47 @@
+{
+  "name": "openbox",
+  "version": "0.5.0",
+  "description": "A extensible toolbox built with Electron",
+  "main": "./out/main/index.js",
+  "author": "openbox",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "package": "electron-builder",
+    "lint": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write .",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:renderer": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "npm run typecheck:node && npm run typecheck:renderer"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "sql.js": "^1.11.0"
+  },
+  "devDependencies": {
+    "@electron-toolkit/utils": "^4.0.0",
+    "@types/adm-zip": "^0.5.8",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "@typescript-eslint/parser": "^8.24.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "antd": "^5.23.0",
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.0",
+    "electron-vite": "^3.1.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "prettier": "^3.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+
+    "typescript": "^5.7.0",
+    "zustand": "^5.0.0"
+  }
+}

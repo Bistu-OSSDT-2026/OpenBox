@@ -1,0 +1,33 @@
+appId: com.openbox.app
+productName: OpenBox
+directories:
+  buildResources: build
+  output: release
+electronDist: node_modules/electron/dist
+files:
+  - '!src/**/*'
+  - '!shared/**/*'
+  - '!database/**/*'
+  - '!plugin-system/**/*'
+  - '!cli/**/*'
+  - '!templates/**/*'
+  - '!electron/**/*.ts'
+  - '!electron.vite.config.*'
+  - '!{.eslintrc.cjs,.prettierrc,tsconfig.json,tsconfig.node.json}'
+  - '!out/renderer/assets/*.map'
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: OpenBox
+  artifactName: ${name}-${version}-setup.${ext}
+extraResources:
+  - from: plugins/
+    to: plugins/
+    filter:
+      - '**/*'
