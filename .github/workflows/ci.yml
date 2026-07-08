@@ -1,22 +1,32 @@
-# 1. 工作流名称（显示在 Actions 列表里）
-name: 基础CI检查
+name: CI
 
-# 2. 触发条件：什么时候自动运行
 on:
   push:
-    branches: [ main ]   # 向 main 分支推送代码时触发
+    branches: [ main, flow ]
   pull_request:
-    branches: [ main ]   # 向 main 分支提 PR 时触发
+    branches: [ main ]
 
-# 3. 具体执行的任务
 jobs:
-  build:                  # 任务ID，自定义
-    runs-on: ubuntu-latest # 运行环境：最新版 Ubuntu 系统
+  build:
+    runs-on: ubuntu-latest
     steps:
-      # 步骤1：拉取当前仓库的代码
       - name: 检出代码
         uses: actions/checkout@v4
-      
-      # 步骤2：执行自定义命令
-      - name: 测试运行
-        run: echo "CI 运行成功"
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 代码规范检查
+        run: npm run lint
+
+      - name: 构建
+        run: npm run build
