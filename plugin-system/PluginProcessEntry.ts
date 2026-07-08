@@ -24,7 +24,7 @@ process.on('message', async (msg: unknown) => {
       const entryName = process.env.PLUGIN_ENTRY || ''
       const entryPath = resolve(pluginDir, entryName)
 
-      pluginModule = require(entryPath)
+      pluginModule = await import(entryPath)
       if (pluginModule && typeof pluginModule.default === 'object') {
         pluginModule = pluginModule.default
       }
