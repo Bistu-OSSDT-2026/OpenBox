@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { Modal, Button, Upload, Space, message, Typography, Divider } from 'antd'
 import { UploadOutlined, FolderOpenOutlined, InboxOutlined } from '@ant-design/icons'
 import { usePluginStore } from '../store/plugin.store'
@@ -15,26 +15,39 @@ export default function PluginImport({ open, onClose }: PluginImportProps) {
   const installPlugin = usePluginStore((s) => s.installPlugin)
   const [importing, setImporting] = useState(false)
 
+  const installZipPath = async (path: string) => {
+    if (!path.toLowerCase().endsWith('.zip')) {
+      message.warning('请选择 .zip 插件包')
+      return
+    }
+
+    try {
+      setImporting(true)
+      const success = await installPlugin('zip', path)
+      if (success) {
+        message.success('插件安装成功')
+        onClose()
+      } else {
+        message.error('插件安装失败')
+      }
+    } catch (err) {
+      message.error(`导入失败: ${(err as Error).message}`)
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const handleSelectZip = async () => {
     try {
       const path = await window.electronAPI?.dialog.openFile()
       if (path) {
-        setImporting(true)
-        const success = await installPlugin('zip', path)
-        if (success) {
-          message.success('插件安装成功')
-          onClose()
-        } else {
-          message.error('插件安装失败')
-        }
-        setImporting(false)
+        await installZipPath(path)
       }
     } catch (err) {
       message.error(`导入失败: ${(err as Error).message}`)
       setImporting(false)
     }
   }
-
   const handleSelectDirectory = async () => {
     try {
       const path = await window.electronAPI?.dialog.openDirectory()
@@ -68,15 +81,14 @@ export default function PluginImport({ open, onClose }: PluginImportProps) {
         <Dragger
           disabled={importing}
           style={{ background: '#fafafa', border: '2px dashed #d9d9d9', borderRadius: 8 }}
-          beforeUpload={() => false}
-          onDrop={(e) => {
-            const files = e.dataTransfer.files
-            if (files.length > 0) {
-              const file = files[0]
-              if (file.name.endsWith('.zip')) {
-                handleSelectZip()
-              }
+          beforeUpload={async (file) => {
+            const path = window.electronAPI?.file.getPath(file as unknown as File)
+            if (path) {
+              await installZipPath(path)
+            } else {
+              message.error('无法读取拖入文件路径')
             }
+            return Upload.LIST_IGNORE
           }}
         >
           <p className="ant-upload-drag-icon">
@@ -115,3 +127,4 @@ export default function PluginImport({ open, onClose }: PluginImportProps) {
     </Modal>
   )
 }
+

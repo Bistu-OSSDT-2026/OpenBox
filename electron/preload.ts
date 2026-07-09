@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { IpcChannel } from '../shared/types/ipc.types'
 
 const api = {
@@ -48,6 +48,10 @@ const api = {
   dialog: {
     openFile: () => ipcRenderer.invoke(IpcChannel.DialogOpenFile),
     openDirectory: () => ipcRenderer.invoke(IpcChannel.DialogOpenDirectory)
+  },
+
+  file: {
+    getPath: (file: File) => webUtils.getPathForFile(file)
   },
 
   // Settings

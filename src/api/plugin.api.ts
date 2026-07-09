@@ -20,6 +20,9 @@ declare global {
         openFile(): Promise<string | null>
         openDirectory(): Promise<string | null>
       }
+      file: {
+        getPath(file: File): string
+      }
       settings: {
         get(key: string): Promise<string | null>
         set(key: string, value: string): Promise<boolean>

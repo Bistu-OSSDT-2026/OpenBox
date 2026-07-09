@@ -76,14 +76,14 @@ app.whenReady().then(async () => {
     console.error('Plugin manager init failed:', err)
   }
 
-  createWindow()
-  registerShortcuts()
-
   try {
-    pluginManager?.activateAllEnabled()
+    await pluginManager?.activateAllEnabled()
   } catch (err) {
     console.error('Plugin activation failed:', err)
   }
+
+  createWindow()
+  registerShortcuts()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -94,11 +94,11 @@ app.whenReady().then(async () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
-  pluginManager?.deactivateAll()
+  void pluginManager?.deactivateAll()
 })
 
 app.on('window-all-closed', () => {
-  pluginManager?.deactivateAll()
+  void pluginManager?.deactivateAll()
   if (process.platform !== 'darwin') {
     app.quit()
   }

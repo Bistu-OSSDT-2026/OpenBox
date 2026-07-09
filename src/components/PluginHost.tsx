@@ -5,6 +5,7 @@ import { Spin, Alert } from 'antd'
 import type { PluginConfig, PluginRendererComponent } from '@shared/types/plugin.types'
 
 interface PluginHostProps {
+  pluginId: string
   pluginName: string
   rendererEntry: string
   config: PluginConfig
@@ -31,7 +32,7 @@ function loadCjsModule(code: string): PluginRendererComponent {
   return Component
 }
 
-export function PluginHost({ pluginName, rendererEntry, config, onConfigChange }: PluginHostProps) {
+export function PluginHost({ pluginId, pluginName, rendererEntry, config, onConfigChange }: PluginHostProps) {
   const [Component, setComponent] = useState<PluginRendererComponent | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,12 +68,12 @@ export function PluginHost({ pluginName, rendererEntry, config, onConfigChange }
 
   const sendToBackend = useCallback(async (message: unknown) => {
     try {
-      const result = await window.electronAPI?.plugin.sendMessage(pluginName, message)
+      const result = await window.electronAPI?.plugin.sendMessage(pluginId, message)
       return result
     } catch {
       return null
     }
-  }, [pluginName])
+  }, [pluginId])
 
   const notify = useCallback((title: string, body?: string) => {
     new Notification(title, { body })
@@ -82,13 +83,13 @@ export function PluginHost({ pluginName, rendererEntry, config, onConfigChange }
     (handler: (msg: unknown) => void) => {
       return (
         window.electronAPI?.plugin.onMessage((data) => {
-          if (data.pluginId === pluginName) {
+          if (data.pluginId === pluginId) {
             handler(data.message)
           }
         }) ?? (() => {})
       )
     },
-    [pluginName]
+    [pluginId]
   )
 
   if (error) {

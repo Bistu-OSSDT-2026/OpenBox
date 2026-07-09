@@ -26,8 +26,3 @@ nsis:
   createDesktopShortcut: true
   shortcutName: OpenBox
   artifactName: ${name}-${version}-setup.${ext}
-extraResources:
-  - from: plugins/
-    to: plugins/
-    filter:
-      - '**/*'

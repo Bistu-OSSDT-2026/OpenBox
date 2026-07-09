@@ -1,5 +1,5 @@
 import { queryAll, queryOne, execute } from '../index'
-import type { PluginMeta, PluginConfig } from '@shared/types/plugin.types'
+import type { PluginMeta, PluginConfig, ConfigField } from '@shared/types/plugin.types'
 
 interface PluginRow {
   id: string

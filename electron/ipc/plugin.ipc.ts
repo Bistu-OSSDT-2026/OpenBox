@@ -22,6 +22,7 @@ export function registerPluginIpc(pluginManager: PluginManager): void {
   })
 
   ipcMain.handle(IpcChannel.PluginInstall, async (_event, source: { type: 'zip' | 'directory'; path: string }) => {
+    let installedId: string | null = null
     try {
       let result
       if (source.type === 'zip') {
@@ -29,15 +30,24 @@ export function registerPluginIpc(pluginManager: PluginManager): void {
       } else {
         result = pluginManager.installFromDirectory(source.path)
       }
+      installedId = result.id
+      await pluginManager.activatePlugin(result.id)
       return { success: true, data: result }
     } catch (err) {
+      if (installedId) {
+        try {
+          await pluginManager.uninstall(installedId)
+        } catch (rollbackError) {
+          console.error('[IPC] Failed to roll back plugin installation:', rollbackError)
+        }
+      }
       return { success: false, error: (err as Error).message }
     }
   })
 
   ipcMain.handle(IpcChannel.PluginUninstall, async (_event, id: string) => {
     try {
-      pluginManager.uninstall(id)
+      await pluginManager.uninstall(id)
       return { success: true }
     } catch (err) {
       return { success: false, error: (err as Error).message }
@@ -55,7 +65,7 @@ export function registerPluginIpc(pluginManager: PluginManager): void {
 
   ipcMain.handle(IpcChannel.PluginDisable, async (_event, id: string) => {
     try {
-      pluginManager.deactivatePlugin(id)
+      await pluginManager.deactivatePlugin(id)
       return { success: true }
     } catch (err) {
       return { success: false, error: (err as Error).message }
