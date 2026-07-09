@@ -49,7 +49,8 @@ process.on('message', async (msg: unknown) => {
       const entryName = process.env.PLUGIN_ENTRY || ''
       const entryPath = resolve(pluginDir, entryName)
 
-      pluginModule = resolvePluginMain(require(entryPath))
+      const mod = await import(entryPath)
+      pluginModule = resolvePluginMain(mod)
       if (!pluginModule) {
         throw new Error('插件主模块未导出 activate 方法')
       }
