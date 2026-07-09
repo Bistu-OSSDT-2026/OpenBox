@@ -120,6 +120,11 @@ export const usePluginStore = create<PluginState>((set, get) => ({
     try {
       const result = await pluginApi.updateConfig(id, config)
       if (result.success) {
+        set((state) => ({
+          plugins: state.plugins.map((p) =>
+            p.id === id ? { ...p, configData: config } : p
+          )
+        }))
         return true
       }
       set({ error: result.error })
