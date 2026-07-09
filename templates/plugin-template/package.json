@@ -1,0 +1,13 @@
+{
+  "name": "{{pluginName}}",
+  "version": "0.1.0",
+  "description": "{{displayName}} plugin for OpenBox",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
