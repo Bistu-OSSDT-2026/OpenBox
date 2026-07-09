@@ -225,7 +225,8 @@ export default function UniEnvUI({
         }
         toast('info', '安装已开始，请稍候...')
         let pollCount = 0
-        while (true) {
+        let installing = true
+        while (installing) {
           pollCount++
           const res = await send({ type: 'getProgress', tool: toolId }) as Record<string, unknown>
           if (res.progress) {

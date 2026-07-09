@@ -1,6 +1,6 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import { existsSync, mkdirSync, writeFileSync, unlinkSync } from 'fs'
+import { existsSync, writeFileSync, unlinkSync, readdirSync, statSync } from 'fs'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 
@@ -96,7 +96,8 @@ export async function downloadWithProgress(
   let downloaded = 0
   let lastReport = 0
 
-  while (true) {
+  let reading = true
+  while (reading) {
     const { done, value } = await reader.read()
     if (done) break
     chunks.push(Buffer.from(value as Uint8Array))
@@ -178,12 +179,10 @@ export function cleanupFile(filePath: string): void {
 }
 
 export function findTopDir(extractDir: string): string {
-  const { readdirSync } = require('fs')
   const entries: string[] = readdirSync(extractDir)
   const singleDir = entries.find((e: string) => {
     try {
-      const stat = require('fs').statSync(`${extractDir}\\${e}`)
-      return stat.isDirectory()
+      return statSync(`${extractDir}\\${e}`).isDirectory()
     } catch { return false }
   })
   return singleDir ? `${extractDir}\\${singleDir}` : extractDir

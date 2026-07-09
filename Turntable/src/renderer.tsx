@@ -406,7 +406,7 @@ export default function TurntablePlugin({ config, api }: PluginRenderProps) {
 
             {items.length === 0 ? (
               <div style={{ padding: '40px 0', textAlign: 'center' as const, color: '#999', fontSize: 14 }}>
-                暂无选项，点击"添加选项"开始添加
+                暂无选项，点击「添加选项」开始添加
               </div>
             ) : (
               <div style={{ overflowX: 'auto' as const }}>
