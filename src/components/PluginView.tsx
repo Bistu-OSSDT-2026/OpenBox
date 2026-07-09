@@ -76,6 +76,7 @@ export default function PluginView() {
       </div>
 
       <PluginHost
+        pluginId={plugin.id}
         pluginName={plugin.name}
         rendererEntry={plugin.entryRenderer}
         config={plugin.configData || {}}

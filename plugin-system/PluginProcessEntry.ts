@@ -11,6 +11,31 @@ let pluginModule: {
   }
 } | null = null
 
+function resolvePluginMain(loaded: unknown): typeof pluginModule {
+  let candidate = loaded
+  const visited = new Set<unknown>()
+
+  while (
+    candidate !== null &&
+    (typeof candidate === 'object' || typeof candidate === 'function') &&
+    !visited.has(candidate)
+  ) {
+    visited.add(candidate)
+    const plugin = candidate as {
+      activate?: unknown
+      deactivate?: unknown
+      onMessage?: unknown
+      default?: unknown
+    }
+    if (typeof plugin.activate === 'function') {
+      return plugin as NonNullable<typeof pluginModule>
+    }
+    candidate = plugin.default
+  }
+
+  return null
+}
+
 process.on('message', async (msg: unknown) => {
   const message = msg as {
     type: string
@@ -24,14 +49,11 @@ process.on('message', async (msg: unknown) => {
       const entryName = process.env.PLUGIN_ENTRY || ''
       const entryPath = resolve(pluginDir, entryName)
 
-      pluginModule = await import(entryPath)
-      if (pluginModule && typeof pluginModule.default === 'object') {
-        pluginModule = pluginModule.default
+      pluginModule = resolvePluginMain(require(entryPath))
+      if (!pluginModule) {
+        throw new Error('插件主模块未导出 activate 方法')
       }
-
-      if (pluginModule?.activate) {
-        await pluginModule.activate(message.payload)
-      }
+      await pluginModule.activate(message.payload)
       if (process.send) {
         process.send({ type: 'started' })
       }
@@ -51,7 +73,11 @@ process.on('message', async (msg: unknown) => {
     }
   } catch (err) {
     if (process.send) {
-      process.send({ type: 'error', error: (err as Error).message })
+      process.send({
+        type: 'error',
+        requestId: message.requestId,
+        error: (err as Error).message
+      })
     }
   }
 })

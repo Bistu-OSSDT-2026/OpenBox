@@ -1,5 +1,6 @@
 import { fork, ChildProcess } from 'child_process'
 import { join } from 'path'
+import { pathToFileURL } from 'url'
 import { EventEmitter } from 'events'
 import { randomUUID } from 'crypto'
 import type { PluginMessage, PluginContext, PluginMain } from '@shared/types/plugin.types'
@@ -22,6 +23,26 @@ interface SandboxOptions {
 
 const REQUEST_TIMEOUT = 30000
 
+function resolvePluginMain(loaded: unknown): PluginMain | null {
+  let candidate = loaded
+  const visited = new Set<unknown>()
+
+  while (
+    candidate !== null &&
+    (typeof candidate === 'object' || typeof candidate === 'function') &&
+    !visited.has(candidate)
+  ) {
+    visited.add(candidate)
+    const plugin = candidate as Partial<PluginMain> & { default?: unknown }
+    if (typeof plugin.activate === 'function') {
+      return plugin as PluginMain
+    }
+    candidate = plugin.default
+  }
+
+  return null
+}
+
 export class PluginSandbox extends EventEmitter {
   private pluginId: string
   private mainEntry: string
@@ -40,7 +61,10 @@ export class PluginSandbox extends EventEmitter {
     this.permissions = options.permissions
     this.pluginDir = options.pluginDir
     this.context = options.context
-    this.useProcess = true
+    // PluginContext exposes synchronous database functions, which cannot be
+    // serialized over child-process IPC. Run plugins in-process so the API
+    // contract remains intact; permission checks still live in PluginManager.
+    this.useProcess = false
   }
 
   async start(): Promise<void> {
@@ -158,11 +182,16 @@ export class PluginSandbox extends EventEmitter {
   private async startInProcess(): Promise<void> {
     try {
       const entryPath = join(this.pluginDir, this.mainEntry)
-      this.pluginModule = (await import(entryPath)) as PluginMain
+      const loaded = await import(pathToFileURL(entryPath).href) as unknown
+      this.pluginModule = resolvePluginMain(loaded)
+      if (!this.pluginModule) {
+        throw new Error('插件主模块未导出 activate 方法')
+      }
       await this.pluginModule.activate(this.context)
       this.emit('started')
     } catch (err) {
       this.emit('error', err)
+      throw err
     }
   }
 
@@ -181,7 +210,9 @@ export class PluginSandbox extends EventEmitter {
         this.pendingRequests.clear()
       }, 3000)
     } else if (this.pluginModule) {
-      await this.pluginModule.deactivate()
+      if (typeof this.pluginModule.deactivate === 'function') {
+        await this.pluginModule.deactivate()
+      }
       this.pluginModule = null
     }
   }

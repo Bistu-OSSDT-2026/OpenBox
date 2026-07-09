@@ -51,11 +51,10 @@ export class PluginManager {
     try {
       this.extractZip(zipPath, tempDir)
       return this.installFromDirectory(tempDir)
-    } catch (err) {
+    } finally {
       if (existsSync(tempDir)) {
-        rmSync(tempDir, { recursive: true })
+        rmSync(tempDir, { recursive: true, force: true })
       }
-      throw err
     }
   }
 
@@ -65,7 +64,8 @@ export class PluginManager {
   }
 
   installFromDirectory(dirPath: string): PluginMeta {
-    const manifestPath = join(dirPath, 'plugin.json')
+    const pluginRoot = this.resolvePluginRoot(dirPath)
+    const manifestPath = join(pluginRoot, 'plugin.json')
     if (!existsSync(manifestPath)) {
       throw new Error('插件目录中未找到 plugin.json')
     }
@@ -85,7 +85,7 @@ export class PluginManager {
       rmSync(pluginDir, { recursive: true })
     }
 
-    copyRecursive(dirPath, pluginDir)
+    copyRecursive(pluginRoot, pluginDir)
 
     const id = randomUUID()
 
@@ -102,7 +102,7 @@ export class PluginManager {
       permissions: JSON.stringify(manifest.permissions),
       config_schema: JSON.stringify(manifest.config || {}),
       config_data: JSON.stringify(this.getDefaultsFromSchema(manifest.config || {})),
-      enabled: 1,
+      enabled: 0,
       installed_path: pluginDir
     }
 
@@ -111,13 +111,29 @@ export class PluginManager {
     return PluginRepository.findById(id)!
   }
 
-  uninstall(id: string): void {
+  private resolvePluginRoot(dirPath: string): string {
+    if (existsSync(join(dirPath, 'plugin.json'))) {
+      return dirPath
+    }
+
+    const childDirs = readdirSync(dirPath)
+      .map((entry) => join(dirPath, entry))
+      .filter((entryPath) => statSync(entryPath).isDirectory())
+
+    if (childDirs.length === 1 && existsSync(join(childDirs[0], 'plugin.json'))) {
+      return childDirs[0]
+    }
+
+    return dirPath
+  }
+
+  async uninstall(id: string): Promise<void> {
     const plugin = PluginRepository.findById(id)
     if (!plugin) {
       throw new Error(`插件 ${id} 未找到`)
     }
 
-    this.deactivatePlugin(id)
+    await this.stopPlugin(id)
 
     PluginRepository.delete(id)
 
@@ -219,12 +235,16 @@ export class PluginManager {
     PluginRepository.updateEnabled(id, true)
   }
 
-  deactivatePlugin(id: string): void {
+  private async stopPlugin(id: string): Promise<void> {
     const sandbox = this.sandboxes.get(id)
     if (sandbox) {
-      sandbox.stop()
       this.sandboxes.delete(id)
+      await sandbox.stop()
     }
+  }
+
+  async deactivatePlugin(id: string): Promise<void> {
+    await this.stopPlugin(id)
     PluginRepository.updateEnabled(id, false)
   }
 
@@ -239,14 +259,22 @@ export class PluginManager {
     }
   }
 
-  deactivateAll(): void {
-    for (const [id] of this.sandboxes) {
-      this.deactivatePlugin(id)
-    }
+  async deactivateAll(): Promise<void> {
+    // Application shutdown only stops plugin runtimes. It must not turn the
+    // user's enabled plugins into disabled plugins in persistent storage.
+    const activeIds = Array.from(this.sandboxes.keys())
+    await Promise.all(activeIds.map((id) => this.stopPlugin(id)))
   }
 
   async sendMessage(id: string, message: unknown): Promise<unknown> {
-    const sandbox = this.sandboxes.get(id)
+    let sandbox = this.sandboxes.get(id)
+    if (!sandbox) {
+      const plugin = PluginRepository.findById(id)
+      if (plugin?.enabled) {
+        await this.activatePlugin(id)
+        sandbox = this.sandboxes.get(id)
+      }
+    }
     if (!sandbox) {
       throw new Error(`插件 ${id} 未激活`)
     }
@@ -256,7 +284,7 @@ export class PluginManager {
   async updateConfig(id: string, config: PluginConfig): Promise<void> {
     PluginRepository.updateConfig(id, config)
     if (this.sandboxes.has(id)) {
-      this.deactivatePlugin(id)
+      await this.stopPlugin(id)
       await this.activatePlugin(id)
     }
   }

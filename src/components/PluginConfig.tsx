@@ -17,7 +17,7 @@ export default function PluginConfig({ plugin, open, onClose }: PluginConfigProp
     if (open && plugin) {
       form.resetFields()
     }
-  }, [open, plugin, form])
+  }, [open, plugin?.id, form])
 
   if (!plugin) return null
 
