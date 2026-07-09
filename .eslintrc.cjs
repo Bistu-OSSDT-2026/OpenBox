@@ -32,5 +32,5 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'off',
     'react/prop-types': 'off'
   },
-  ignorePatterns: ['out/', 'dist/', 'node_modules/', '*.config.ts']
+  ignorePatterns: ['out/', 'dist/', 'node_modules/', '*.config.ts', 'Diary/', 'UniEnv/', 'Turntable/', 'DiceRoller/']
 }
